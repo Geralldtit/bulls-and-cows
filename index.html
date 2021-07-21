@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bulls and Cows</title>
+    <style type="text/css">
+      body {
+        margin: 4vmin auto;
+        width: 74vmin;
+        background: #eee;
+        font-size: 8vmin;
+        font-family: sans-serif;
+      }
+      input,
+      button,
+      textarea {
+        border-radius: 1em;
+        font-size: 1em;
+      }
+      input,
+      button {
+        height: 2em;
+      }
+      input {
+        width: 6.8em;
+        padding: 0 1em;
+        margin: 0 0.4em 0.4em 0;
+        text-align: right;
+        border: none;
+      }
+      button {
+        width: 2em;
+        background: #fff;
+        border: none;
+        margin: 0 0.4em 0.4em 0;
+        display: inline-block;
+        text-align: center;
+        line-height: 2em;
+      }
+      button:active {
+        background: red;
+        color: white;
+      }
+      button:nth-child(4n + 4) {
+        background: #4a90e2;
+        color: white;
+        margin-right: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main">
+      <div>
+        <textarea
+          name="result"
+          id="result-output"
+          cols="10"
+          rows="10"
+        ></textarea>
+      </div>
+      <div class="output-div">
+        <input type="text" id="output" />
+      </div>
+    </div>
+    <script>
+      const gameSettingDimension = 4;
+      var hiddenNumber = generateNumber(gameSettingDimension);
+      while (!isValid(hiddenNumber)) {
+        hiddenNumber = generateNumber(gameSettingDimension);
+        console.log("Generated: ", hiddenNumber);
+      }
+      console.log("Result: ", hiddenNumber);
+
+      const output = document.getElementById("output");
+      const inputDiv = document.createElement("div");
+      var inputCount = 0;
+      inputDiv.classList.add("keyboard");
+      document.querySelector(".output-div").appendChild(inputDiv);
+
+      const symbolsArray = "789C456B123=";
+      symbolsArray.split("").map((symbol) => {
+        inputDiv.insertAdjacentHTML(
+          "beforeend",
+          `<button value="${symbol}">${symbol}</button>`
+        );
+      });
+
+      document.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", function () {
+          if (this.value.match("[1-9]")) {
+            if (inputCount >= gameSettingDimension) return;
+            this.disabled = true;
+            inputCount++;
+          }
+          processInput(this.value);
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (
+          output.value.includes(event.key) ||
+          (event.key.match("[1-9]") && inputCount >= gameSettingDimension) ||
+          !(
+            symbolsArray.includes(event.key) ||
+            event.key === "Backspace" ||
+            event.key === "Enter" ||
+            event.key === "Escape"
+          )
+        ) {
+          event.preventDefault();
+        } else {
+          processInput(event.key);
+          if (event.key.match("[1-9]")) {
+            findButtonByValue(event.key).disabled = true;
+            inputCount++;
+          }
+        }
+      });
+
+      function generateNumber(dimension) {
+        return randomInteger(1111, Math.pow(10, dimension) - 1);
+      }
+
+      function randomInteger(min, max) {
+        let rand = min - 0.5 + Math.random() * (max - min + 1);
+        return Math.round(rand);
+      }
+
+      function isValid(number) {
+        let str = number.toString();
+        if (str.includes(0)) return false;
+        for (let i = 0; i < str.length; i++) {
+          if (str.indexOf(str[i], i + 1) > 0) return false;
+        }
+        return true;
+      }
+
+      function findButtonByValue(btnValue) {
+        return document.querySelector("button[value='" + btnValue + "']");
+      }
+
+      function processInput(value) {
+        switch (value) {
+          case "=":
+          case "Enter":
+            try {
+              let attempt = parseInt(output.value, 10);
+              if (attempt === hiddenNumber) {
+                output.value = "You WIN!!!";
+              } else {
+                let result = calculateBullsAndCows(attempt);
+                console.log(result);
+                resetInputs();
+              }
+            } catch (e) {
+              console.log(e);
+              // сохраняем значение поля
+              let oldValue = output.value;
+              // создаем новую переменную
+              let newValue = "недопустимое выражение";
+              // выводим значение новой переменной в поле
+              output.value = newValue;
+              // через полторы секунды возвращаем полю старое значение
+              setTimeout(() => {
+                output.value = oldValue;
+              }, 1500);
+            }
+            break;
+          case "C":
+          case "c":
+          case "Escape":
+            resetInputs();
+            break;
+          case "B":
+          case "Backspace":
+            findButtonByValue(
+              output.value[output.value.length - 1]
+            ).disabled = false;
+            output.value = output.value.substring(0, output.value.length - 1);
+            inputCount--;
+            break;
+          default:
+            output.value += value;
+        }
+      }
+
+      function resetInputs() {
+        output.value = "";
+        document
+          .querySelectorAll("button")
+          .forEach((b) => (b.disabled = false));
+        inputCount = 0;
+      }
+
+      function calculateBullsAndCows(inputNumber) {
+        let bulls = 0,
+          cows = 0,
+          requiredNumber = hiddenNumber,
+          validateNumber = inputNumber;
+        while (validateNumber > 0) {
+          if (requiredNumber % 10 === validateNumber % 10) {
+            bulls++;
+          }
+          if (hiddenNumber.toString().includes(validateNumber % 10)) {
+            cows++;
+          }
+          requiredNumber = Math.trunc(requiredNumber / 10);
+          validateNumber = Math.trunc(validateNumber / 10);
+        }
+
+        return `${bulls} Bulls and ${cows - bulls} Cows`;
+      }
+    </script>
+  </body>
+</html>
